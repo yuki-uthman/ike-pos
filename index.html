@@ -9,6 +9,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Source+Sans+3:wght@400;600;700&display=swap">
 <style>
   * { box-sizing: border-box; }
+  /* An author display rule outranks the UA stylesheet's [hidden]{display:none},
+     so .detail{display:flex} would otherwise render every row expanded. */
+  [hidden] { display: none !important; }
   html, body { height: 100%; }
   body {
     margin: 0;
