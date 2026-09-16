@@ -2,7 +2,9 @@
 
 Today's money in at MRH Investment, split into **Cash** and **Transfer** —
 two cards, each topped by its own total, listing every payment as
-`invoice number · customer · amount`. Like its siblings this repo is
+`invoice number · customer · amount`. Click any payment to expand it in
+place and see what was bought: product, quantity, and line total. Like its
+siblings this repo is
 **static only**: no secret, no cron, no build step. It fetches its data live
 from [ike-data](https://github.com/yuki-uthman/ike-data), the shared Odoo
 pipeline that also backs [ike-sales](https://github.com/yuki-uthman/ike-sales)
@@ -34,6 +36,19 @@ That strip is a prompt, not an error: when it appears, widen the patterns in
 `ike-data/scripts/fetch_today.py` and it stops appearing. The run log of every
 refresh prints each distinct method name it saw, so you never have to guess
 what the real names are.
+
+## The expanded rows
+
+A row expands only when ike-data found lines behind it — the POS order's
+lines for a counter sale, the reconciled invoice's lines for a bank receipt.
+Line totals are tax-inclusive, the same basis as the row amount and the card
+total above it, so for a payment that settles an invoice in full the lines
+add up to the row. A partial payment expands to the whole invoice's lines,
+which will therefore total more than the payment itself.
+
+Rows stay open across the 60-second refresh — an open row is remembered by
+its reference and amount, not its position, so a new payment arriving does
+not slam shut the row you were reading.
 
 ## One-time setup
 
