@@ -101,10 +101,18 @@
   .cur { font-size: 13px; font-weight: 700; color: var(--ink3); letter-spacing: 0.03em; }
 
   .rows { padding: 6px 8px 10px; }
-  .sectionhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 10px 6px; font-family: Manrope, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
-  .sectionhead + .sectionhead, .rows > .sectionhead:not(:first-child) { margin-top: 6px; border-top: 1px solid var(--rule); padding-top: 16px; }
-  .sectionhead .stot { font-family: Manrope, sans-serif; font-weight: 700; font-size: 12.5px; letter-spacing: 0; text-transform: none; color: var(--ink2); font-variant-numeric: tabular-nums; }
-  .sectionhead.out .stot { color: var(--out); }
+  .sectionhead { padding: 10px 10px 6px; font-family: Manrope, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+  .rows > .sectionhead:not(:first-child) { margin-top: 6px; border-top: 1px solid var(--rule); padding-top: 16px; }
+
+  /* The section's own total sits at the BOTTOM of its row list, like a
+     receipt - and reads louder than any individual row above it (bigger,
+     bolder, the section's own color), since the total is the number that
+     matters more than any one line under it. */
+  .sectiontotal { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 12px 10px 8px; margin-top: 2px; border-top: 1px solid var(--rule); }
+  .sectiontotal .stitle { font-family: Manrope, sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink3); }
+  .sectiontotal .stot { font-family: Manrope, sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .sectiontotal.pos .stot { color: var(--pos); }
+  .sectiontotal.out .stot { color: var(--out); }
   .item + .item > .row { box-shadow: inset 0 1px 0 var(--rule); }
   .row { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 11px; width: 100%; font: inherit; color: inherit; background: none; border: 0; text-align: left; }
   .row.has { cursor: pointer; }
@@ -416,9 +424,11 @@
   // received, same row shape as Transfer) on top, "Out" (till withdrawals)
   // below it. The card's own headline total is net (In minus Out), colored
   // green when the day is up and red when it's down, since that headline is
-  // the one number meant to answer "how did cash move today" at a glance;
-  // In and Out keep their own separate, unsigned subtotals in their section
-  // headers right below it.
+  // the one number meant to answer "how did cash move today" at a glance.
+  // Each section's own total sits at the BOTTOM of its row list (a receipt
+  // total, not a header caption) and is deliberately bigger/bolder than any
+  // row above it - the total matters more than any one line item, and
+  // should read that way.
   function cashCardHtml(inBucket, inRows, outBucket, outRows, currency) {
     var inBody = inRows.length
       ? inRows.map(function (t, i) { return rowHtml(t, i, 'pos'); }).join('')
@@ -438,10 +448,12 @@
         '<div class="total ' + netClass + '"><span class="cur">' + escapeHtml(currency) + '</span><span>' + netText + '</span></div>' +
       '</div>' +
       '<div class="rows">' +
-        '<div class="sectionhead"><span>In</span><span class="stot">' + escapeHtml(currency) + ' ' + fmt(inBucket.total || 0) + '</span></div>' +
+        '<div class="sectionhead"><span>In</span></div>' +
         inBody +
-        '<div class="sectionhead out"><span>Out</span><span class="stot">−' + escapeHtml(currency) + ' ' + fmt(outBucket.total || 0) + '</span></div>' +
+        '<div class="sectiontotal pos"><span class="stitle">Total In</span><span class="stot">' + escapeHtml(currency) + ' ' + fmt(inBucket.total || 0) + '</span></div>' +
+        '<div class="sectionhead out"><span>Out</span></div>' +
         outBody +
+        '<div class="sectiontotal out"><span class="stitle">Total Out</span><span class="stot">−' + escapeHtml(currency) + ' ' + fmt(outBucket.total || 0) + '</span></div>' +
       '</div>' +
       '</div>';
   }
