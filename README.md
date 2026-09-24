@@ -49,9 +49,12 @@ register's own "Cash Out" button — a staff member taking money out of the
 till for a float pickup, petrol, a gate pass, and so on. These have no
 `hr.expense` or `account.payment` behind them at all, so this is the only
 place they're visible; confirmed expenses staff filed through the Expenses
-app live on the separate **ike-expenses** dashboard instead. Out is *not*
-netted against In — the card's headline total is In only; Out gets its own
-subtotal in its own section header, not a running balance.
+app live on the separate **ike-expenses** dashboard instead.
+
+The card's headline number **is** In minus Out — green when the day is net
+positive, red when it's net negative — so it answers "how did cash move
+today" at a glance. In and Out keep their own separate, unsigned subtotals
+in their own section headers underneath it; only the headline is netted.
 
 ## Cash vs transfer
 
