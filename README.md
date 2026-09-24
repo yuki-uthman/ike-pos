@@ -1,17 +1,37 @@
 # Ike POS
 
-The till, day by day, at MRH Investment: two cards, **Transfer** and
-**Cash**. The Cash card carries two sections — **In** (money received, same
-row shape as Transfer) on top, **Out** (what got taken back out of the till)
-below it, each with its own subtotal. A date pill strip across the top (same
-pattern as [ike-sales](https://github.com/yuki-uthman/ike-sales), minus the
-chart) lets you flip back through the retained history instead of only ever
-seeing today. Like its siblings this repo is
+The till, day by day, at MRH Investment. A **Till** card up top is the
+register's own reconciliation — Opening and Expected Closing on one row,
+Counted and Difference on the next. Below it, two more cards, **Transfer**
+and **Cash**. The Cash card carries two sections — **In** (money received,
+same row shape as Transfer) on top, **Out** (what got taken back out of the
+till) below it, each with its own subtotal. A date pill strip across the top
+(same pattern as [ike-sales](https://github.com/yuki-uthman/ike-sales), minus
+the chart) lets you flip back through the retained history instead of only
+ever seeing today. Like its siblings this repo is
 **static only**: no secret, no cron, no build step. It fetches its data live
 from [ike-data](https://github.com/yuki-uthman/ike-data), the shared Odoo
 pipeline that also backs ike-sales and ike-expenses.
 
-## What it counts, and what it does not
+## What the Till card means
+
+**Opening** and **Expected Closing** are what Odoo's own theoretical
+reconciliation says: the float the till started the day with, and where the
+running balance says it should end up. **Counted** and **Difference** are
+the reality check — what staff actually counted at close, and the gap that
+leaves. Difference sits directly under Expected Closing on purpose: reading
+straight down that column is the subtraction. A day still in progress shows
+"Still open" and leaves Counted/Difference as `—` rather than Odoo's own
+placeholder numbers (`0` counted, a huge negative difference) that only mean
+something once the drawer is actually closed and counted.
+
+This card can disagree with what the Cash/Transfer cards' totals would
+suggest, and that is expected, not a bug: it answers "does the drawer match
+what Odoo expects", not "what money moved" — a miscount, a manual float
+adjustment, or a previous day's session closing late can all move it
+independently of the day's recorded transactions.
+
+## What Transfer/Cash count, and what they don't
 
 **Cash** and **Transfer** count **money received that day**, not sales made
 that day — the two are different numbers and both are right:
