@@ -90,7 +90,7 @@
   .lrow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 0; }
   .lrow .llabel { font-size: 13px; color: var(--ink2); }
   .lrow .lval { font-family: Manrope, sans-serif; font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
-  .lrow .lval .cur { font-size: 11px; font-weight: 700; color: var(--ink3); letter-spacing: 0.03em; }
+  .lrow .lval .cur { font-size: 11px; font-weight: 700; letter-spacing: 0.03em; }
   .lrow .lval.pos { color: var(--pos); }
   .lrow .lval.neg { color: var(--neg); }
   .lrow .lval.muted { color: var(--ink3); }
@@ -122,7 +122,7 @@
   .total { display: flex; align-items: baseline; gap: 7px; margin-top: 4px; font-family: Manrope, sans-serif; font-weight: 800; font-size: 34px; line-height: 1.05; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; }
   .total.pos { color: var(--pos); }
   .total.neg { color: var(--neg); }
-  .cur { font-size: 13px; font-weight: 700; color: var(--ink3); letter-spacing: 0.03em; }
+  .cur { font-size: 13px; font-weight: 700; letter-spacing: 0.03em; }
 
   .rows { padding: 6px 8px 10px; }
   .sectionhead { padding: 10px 10px 6px; font-family: Manrope, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
@@ -135,11 +135,10 @@
   .sectiontotal { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 12px 10px 8px; margin-top: 2px; border-top: 1px solid var(--rule); }
   .sectiontotal .stitle { font-family: Manrope, sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink3); }
   .sectiontotal .stot { font-family: Manrope, sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
-  /* The currency prefix stays the muted, unemphasized .cur treatment even
-     when the number itself is colored - same convention as every other
-     total on the card (headline, Opening, Expected Closing, Difference).
-     It used to be plain text here, so it inherited the full pos/out color
-     along with the number - the odd one out. */
+  /* .cur has no color of its own - it inherits whatever color the
+     surrounding total already carries (pos/out/accent/plain), so "MVR"
+     always matches the number and sign right next to it. Only its size
+     differs, scaled down against the bigger figure it's labeling. */
   .sectiontotal .stot .cur { font-size: 12px; }
   .sectiontotal.pos .stot { color: var(--pos); }
   .sectiontotal.out .stot { color: var(--out); }
@@ -380,11 +379,13 @@
 
   // Difference (and only Difference) still needs a signed "+X / -X" format;
   // Opening/Expected/Counted are plain magnitudes, never signed. The sign
-  // rides WITH the muted currency label ("-MVR"), not the big colored
-  // number - grouping it with the number instead left it inheriting the
-  // number's large bold size while sitting next to tiny "MVR", so the dash
-  // floated up near cap-height instead of sitting on the baseline with the
-  // text beside it. Same baseline, same size, same color as "MVR" fixes it.
+  // rides WITH the small currency label ("-MVR"), not the big number -
+  // grouping it with the number instead left it inheriting the number's
+  // large bold size while sitting next to tiny "MVR", so the dash floated
+  // up near cap-height instead of sitting on the baseline with the text
+  // beside it. .cur has no color of its own, so "-MVR" still lands in
+  // whatever color the enclosing .lval carries - same color as the digits,
+  // just fixed in size/baseline.
   function fmtSigned(n, currency) {
     if (n === 0) return '<span class="cur">' + escapeHtml(currency) + '</span> ' + fmt(0);
     var sign = n > 0 ? '+' : '−';
