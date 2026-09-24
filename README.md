@@ -1,11 +1,12 @@
 # Ike POS
 
-The till, day by day, at MRH Investment: money **in**, split into **Cash**
-and **Transfer** cards, plus what got taken back **out** of the drawer in a
-third **Cash Out** card. A date pill strip across the top (same pattern as
-[ike-sales](https://github.com/yuki-uthman/ike-sales), minus the chart) lets
-you flip back through the retained history instead of only ever seeing
-today. Like its siblings this repo is
+The till, day by day, at MRH Investment: two cards, **Transfer** and
+**Cash**. The Cash card carries two sections — **In** (money received, same
+row shape as Transfer) on top, **Out** (what got taken back out of the till)
+below it, each with its own subtotal. A date pill strip across the top (same
+pattern as [ike-sales](https://github.com/yuki-uthman/ike-sales), minus the
+chart) lets you flip back through the retained history instead of only ever
+seeing today. Like its siblings this repo is
 **static only**: no secret, no cron, no build step. It fetches its data live
 from [ike-data](https://github.com/yuki-uthman/ike-data), the shared Odoo
 pipeline that also backs ike-sales and ike-expenses.
@@ -23,14 +24,14 @@ that day — the two are different numbers and both are right:
 "Today" is the Maldives day (UTC+5), the same boundary `fetch_sales.py` uses,
 so the two dashboards always agree on which day it is.
 
-**Cash Out** is a different, narrower question: the POS register's own
-"Cash Out" button — a staff member taking money out of the till for a float
-pickup, petrol, a gate pass, and so on. These have no `hr.expense` or
-`account.payment` behind them at all, so this is the only place they're
-visible; confirmed expenses staff filed through the Expenses app live on the
-separate **ike-expenses** dashboard instead. Cash Out is *not* net against
-Cash — the two cards are independent totals of what came in and what went
-out, not a running balance.
+The Cash card's **Out** section is a different, narrower question: the POS
+register's own "Cash Out" button — a staff member taking money out of the
+till for a float pickup, petrol, a gate pass, and so on. These have no
+`hr.expense` or `account.payment` behind them at all, so this is the only
+place they're visible; confirmed expenses staff filed through the Expenses
+app live on the separate **ike-expenses** dashboard instead. Out is *not*
+netted against In — the card's headline total is In only; Out gets its own
+subtotal in its own section header, not a running balance.
 
 ## Cash vs transfer
 
@@ -53,9 +54,9 @@ POS order's lines for a counter sale, the reconciled invoice's lines for a
 bank receipt. Line totals are tax-inclusive, the same basis as the row amount
 and the card total above it, so for a payment that settles an invoice in full
 the lines add up to the row. A partial payment expands to the whole invoice's
-lines, which will therefore total more than the payment itself. Cash Out rows
-don't expand — there's no product detail behind a till withdrawal, just the
-reason staff typed in at the register.
+lines, which will therefore total more than the payment itself. Rows in the
+Cash card's Out section don't expand — there's no product detail behind a
+till withdrawal, just the reason staff typed in at the register.
 
 Rows stay open across the 60-second refresh — an open row is remembered by
 its reference and amount, not its position, so a new payment arriving does
