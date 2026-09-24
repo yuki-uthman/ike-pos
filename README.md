@@ -1,9 +1,11 @@
 # Ike POS
 
 The till, day by day, at MRH Investment. A **Till** card up top is the
-register's own reconciliation — Opening and Expected Closing on one row,
-Counted and Difference on the next. Below it, two more cards, **Transfer**
-and **Cash**. The Cash card carries two sections — **In** (money received,
+register's own reconciliation, laid out as a ledger: Opening Balance and
+Cash Today lead into a ruled Expected Closing subtotal; Counted continues
+right below it in the same value column, then a second, bigger ruled total
+turns it into Difference. Below it, two more cards, **Transfer** and
+**Cash**. The Cash card carries two sections — **In** (money received,
 same row shape as Transfer) on top, **Out** (what got taken back out of the
 till) below it, each with its own subtotal. A date pill strip across the top
 (same pattern as [ike-sales](https://github.com/yuki-uthman/ike-sales), minus
@@ -15,15 +17,21 @@ pipeline that also backs ike-sales and ike-expenses.
 
 ## What the Till card means
 
-**Opening** and **Expected Closing** are what Odoo's own theoretical
-reconciliation says: the float the till started the day with, and where the
-running balance says it should end up. **Counted** and **Difference** are
-the reality check — what staff actually counted at close, and the gap that
-leaves. Difference sits directly under Expected Closing on purpose: reading
-straight down that column is the subtraction. A day still in progress shows
-"Still open" and leaves Counted/Difference as `—` rather than Odoo's own
-placeholder numbers (`0` counted, a huge negative difference) that only mean
-something once the drawer is actually closed and counted.
+Read top to bottom, it's one running ledger: **Opening Balance** is the
+float the till started the day with; **Cash Today** is the same net cash
+figure the Cash card headlines (In minus Out), colored the same way. Those
+two lead into **Expected Closing** — Odoo's own theoretical running
+balance — as a ruled subtotal. **Counted** continues right below it, in the
+same value column, since it's the direct comparison: what staff actually
+found at close versus what Odoo expected. A second, bigger ruled total
+turns that comparison into **Difference** — the number that actually
+answers "are we OK", so it's deliberately the loudest figure on the card,
+not just another line in the list. The header pill reads "Live" (with a
+small dot) while the session is still open, leaving Counted/Difference as
+`—` rather than Odoo's own placeholder numbers (`0` counted, a huge
+negative difference) that only mean something once the drawer is actually
+closed and counted; it switches to "Balanced" or "Off by ±MVR n" once it
+is.
 
 This card can disagree with what the Cash/Transfer cards' totals would
 suggest, and that is expected, not a bug: it answers "does the drawer match
