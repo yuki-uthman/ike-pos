@@ -94,18 +94,25 @@
   .lrow .lval.pos { color: var(--pos); }
   .lrow .lval.neg { color: var(--neg); }
   .lrow .lval.muted { color: var(--ink3); }
-  /* Opening Balance reads at the same size/weight as Total In and Total Out
-     - it's the same tier of figure, just the day's starting point rather
-     than something today's rows add up to - and gets its own accent color
-     so it doesn't get lost now that it's as loud as its neighbors. */
+  /* Size by ROLE, not by position in the list - three tiers:
+       - inputs (Opening Balance, Total In, Total Out): the given figures,
+         smallest of the three tiers.
+       - the compared pair (Expected Closing, Counted): sized EQUAL to each
+         other, bigger than the inputs, since the reconciliation is a direct
+         comparison between them - unequal sizing would wrongly suggest one
+         matters more than the other.
+       - the answer (Difference): biggest on the card, the only number that
+         actually says "are we OK".
+     Opening Balance matches Total In/Out's size exactly (tier 1) and gets
+     its own accent color so it doesn't get lost among equally-loud figures. */
   .lrow.opening .llabel { font-family: Manrope, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); }
   .lrow.opening .lval { font-size: 20px; letter-spacing: -0.01em; color: var(--accent); }
   .lrow.subtotal { border-top: 1px solid var(--rule); margin-top: 4px; padding-top: 13px; }
-  .lrow.subtotal .llabel { font-family: Manrope, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); }
-  .lrow.subtotal .lval { font-size: 21px; letter-spacing: -0.01em; }
+  .lrow.subtotal .llabel, .lrow.counted .llabel { font-family: Manrope, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); }
+  .lrow.subtotal .lval, .lrow.counted .lval { font-size: 24px; letter-spacing: -0.01em; }
   .lrow.grandtotal { border-top: 1px solid var(--rule); margin-top: 4px; padding-top: 15px; padding-bottom: 17px; }
   .lrow.grandtotal .llabel { font-family: Manrope, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); }
-  .lrow.grandtotal .lval { font-size: 27px; letter-spacing: -0.015em; }
+  .lrow.grandtotal .lval { font-size: 29px; letter-spacing: -0.015em; }
 
   .cardhead { padding: 16px 18px 12px; border-bottom: 1px solid var(--rule); display: flex; flex-direction: column; gap: 2px; }
   .headrow { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
@@ -128,6 +135,12 @@
   .sectiontotal { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 12px 10px 8px; margin-top: 2px; border-top: 1px solid var(--rule); }
   .sectiontotal .stitle { font-family: Manrope, sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink3); }
   .sectiontotal .stot { font-family: Manrope, sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  /* The currency prefix stays the muted, unemphasized .cur treatment even
+     when the number itself is colored - same convention as every other
+     total on the card (headline, Opening, Expected Closing, Difference).
+     It used to be plain text here, so it inherited the full pos/out color
+     along with the number - the odd one out. */
+  .sectiontotal .stot .cur { font-size: 12px; }
   .sectiontotal.pos .stot { color: var(--pos); }
   .sectiontotal.out .stot { color: var(--out); }
   .item + .item > .row { box-shadow: inset 0 1px 0 var(--rule); }
@@ -202,8 +215,8 @@
     .ledger.opening-only { padding-bottom: 16px; }
     .lrow .lval { font-size: 16px; }
     .lrow.opening .lval { font-size: 20px; }
-    .lrow.subtotal .lval { font-size: 24px; }
-    .lrow.grandtotal .lval { font-size: 32px; }
+    .lrow.subtotal .lval, .lrow.counted .lval { font-size: 26px; }
+    .lrow.grandtotal .lval { font-size: 36px; }
   }
 </style>
 </head>
@@ -366,11 +379,15 @@
   }
 
   // Difference (and only Difference) still needs a signed "+X / -X" format;
-  // Opening/Expected/Counted are plain magnitudes, never signed.
+  // Opening/Expected/Counted are plain magnitudes, never signed. The sign
+  // rides with the number (colored, same as the digits) - only the
+  // currency label itself gets the muted .cur treatment, same convention
+  // as every other total on the card.
   function fmtSigned(n, currency) {
-    if (n === 0) return escapeHtml(currency) + ' ' + fmt(0);
+    var cur = '<span class="cur">' + escapeHtml(currency) + '</span>';
+    if (n === 0) return cur + ' ' + fmt(0);
     var sign = n > 0 ? '+' : '−';
-    return sign + escapeHtml(currency) + ' ' + fmt(Math.abs(n));
+    return sign + cur + ' ' + fmt(Math.abs(n));
   }
 
   // Plain card (Transfer): one bucket, one row list.
@@ -435,7 +452,7 @@
         '</div>';
       closingHtml = '<div class="ledger">' +
         '<div class="lrow subtotal"><span class="llabel">Expected Closing</span><span class="lval">' + money(till.expectedClosing) + '</span></div>' +
-        '<div class="lrow"><span class="llabel">Counted</span><span class="lval' + (diffKnown ? '' : ' muted') + '">' + (diffKnown ? money(till.counted) : '—') + '</span></div>' +
+        '<div class="lrow counted"><span class="llabel">Counted</span><span class="lval' + (diffKnown ? '' : ' muted') + '">' + (diffKnown ? money(till.counted) : '—') + '</span></div>' +
         '<div class="lrow grandtotal"><span class="llabel">Difference</span><span class="lval ' + diffClass + '">' + (diffKnown ? fmtSigned(till.difference, currency) : '—') + '</span></div>' +
         '</div>';
     }
@@ -452,10 +469,10 @@
       '<div class="rows">' +
         '<div class="sectionhead"><span>In</span></div>' +
         inBody +
-        '<div class="sectiontotal pos"><span class="stitle">Total In</span><span class="stot">' + escapeHtml(currency) + ' ' + fmt(inBucket.total || 0) + '</span></div>' +
+        '<div class="sectiontotal pos"><span class="stitle">Total In</span><span class="stot"><span class="cur">' + escapeHtml(currency) + '</span> ' + fmt(inBucket.total || 0) + '</span></div>' +
         '<div class="sectionhead out"><span>Out</span></div>' +
         outBody +
-        '<div class="sectiontotal out"><span class="stitle">Total Out</span><span class="stot">−' + escapeHtml(currency) + ' ' + fmt(outBucket.total || 0) + '</span></div>' +
+        '<div class="sectiontotal out"><span class="stitle">Total Out</span><span class="stot">−<span class="cur">' + escapeHtml(currency) + '</span> ' + fmt(outBucket.total || 0) + '</span></div>' +
       '</div>' +
       closingHtml +
       '</div>';
