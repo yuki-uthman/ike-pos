@@ -142,6 +142,7 @@
   .cust.anon { font-weight: 400; color: var(--ink3); font-style: italic; }
   .amt { flex: 0 0 auto; font-family: Manrope, sans-serif; font-size: 14.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .amt.out { color: var(--out); }
+  .amt.pos { color: var(--pos); }
 
   .empty { margin: auto; padding: 24px; text-align: center; color: var(--ink3); font-size: 14px; }
 
@@ -305,7 +306,7 @@
 
   var rowSeq = 0;
 
-  function rowHtml(t, i) {
+  function rowHtml(t, i, tint) {
     var anon = !t.customer || t.customer === 'Walk-in';
     var delay = Math.min(i, 12) * 30 + 'ms';
     var lines = t.lines || [];
@@ -317,7 +318,7 @@
       (has ? ' type="button" aria-expanded="false" aria-controls="' + id + '"' : '') + '>' +
       '<span class="ref">' + escapeHtml(t.ref || '—') + '</span>' +
       '<span class="cust' + (anon ? ' anon' : '') + '">' + escapeHtml(t.customer || 'Walk-in') + '</span>' +
-      '<span class="amt">' + fmt(t.amount) + '</span>' +
+      '<span class="amt' + (tint ? ' ' + tint : '') + '">' + fmt(t.amount) + '</span>' +
       (has
         ? '<svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" aria-hidden="true" style="stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M2.5 4.5L6 8l3.5-3.5"></path></svg>'
         : '') +
@@ -420,7 +421,7 @@
   // headers right below it.
   function cashCardHtml(inBucket, inRows, outBucket, outRows, currency) {
     var inBody = inRows.length
-      ? inRows.map(rowHtml).join('')
+      ? inRows.map(function (t, i) { return rowHtml(t, i, 'pos'); }).join('')
       : '<div class="empty">No cash payments yet.</div>';
     var outBody = outRows.length
       ? outRows.map(outRowHtml).join('')
