@@ -80,12 +80,13 @@
   .cardsrow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; }
 
-  /* Till card: a ledger, not a stat grid. Opening/Cash Today lead into a
-     ruled Expected Closing subtotal; Counted continues the same list right
-     under it (same value column - the strongest comparison there is);
-     Difference is a second, bigger ruled total, since it's the number that
-     actually answers "are we OK", not just an accompanying figure. */
+  /* The till's own reconciliation now lives inside the Cash card, not a
+     separate card: Opening Balance bookends the top (same visual weight as
+     Total In/Out below it - it's a total-tier figure too, just not derived
+     from today's rows), In/Out sit in the middle as shipped, and Expected
+     Closing/Counted/Difference bookend the bottom as a second ledger. */
   .ledger { padding: 14px 18px 4px; }
+  .ledger.opening-only { border-bottom: 1px solid var(--rule); padding-bottom: 12px; }
   .lrow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 0; }
   .lrow .llabel { font-size: 13px; color: var(--ink2); }
   .lrow .lval { font-family: Manrope, sans-serif; font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
@@ -93,18 +94,18 @@
   .lrow .lval.pos { color: var(--pos); }
   .lrow .lval.neg { color: var(--neg); }
   .lrow .lval.muted { color: var(--ink3); }
+  /* Opening Balance reads at the same size/weight as Total In and Total Out
+     - it's the same tier of figure, just the day's starting point rather
+     than something today's rows add up to - and gets its own accent color
+     so it doesn't get lost now that it's as loud as its neighbors. */
+  .lrow.opening .llabel { font-family: Manrope, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); }
+  .lrow.opening .lval { font-size: 20px; letter-spacing: -0.01em; color: var(--accent); }
   .lrow.subtotal { border-top: 1px solid var(--rule); margin-top: 4px; padding-top: 13px; }
   .lrow.subtotal .llabel { font-family: Manrope, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); }
-  .lrow.subtotal .lval { font-size: 19px; letter-spacing: -0.01em; }
+  .lrow.subtotal .lval { font-size: 21px; letter-spacing: -0.01em; }
   .lrow.grandtotal { border-top: 1px solid var(--rule); margin-top: 4px; padding-top: 15px; padding-bottom: 17px; }
   .lrow.grandtotal .llabel { font-family: Manrope, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); }
   .lrow.grandtotal .lval { font-size: 27px; letter-spacing: -0.015em; }
-
-  .statuspill { font-size: 12.5px; color: var(--ink3); font-weight: 600; }
-  .statuspill.live { display: inline-flex; align-items: center; gap: 5px; }
-  .livedot { width: 6px; height: 6px; border-radius: 50%; background: var(--pos); flex: 0 0 auto; }
-  .statuspill.bal { color: var(--pos); }
-  .statuspill.off { color: var(--neg); }
 
   .cardhead { padding: 16px 18px 12px; border-bottom: 1px solid var(--rule); display: flex; flex-direction: column; gap: 2px; }
   .headrow { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
@@ -198,8 +199,10 @@
     .row { padding: 11px 14px; }
     .ref { font-size: 12px; }
     .ledger { padding: 18px 24px 6px; }
+    .ledger.opening-only { padding-bottom: 16px; }
     .lrow .lval { font-size: 16px; }
-    .lrow.subtotal .lval { font-size: 22px; }
+    .lrow.opening .lval { font-size: 20px; }
+    .lrow.subtotal .lval { font-size: 24px; }
     .lrow.grandtotal .lval { font-size: 32px; }
   }
 </style>
@@ -362,48 +365,12 @@
       head + detail + '</div>';
   }
 
-  // Till card: a ledger. Opening Balance and Cash Today (the same net figure
-  // the Cash card headlines) lead into a ruled Expected Closing subtotal;
-  // Counted continues right below it in the same value column - its direct
-  // comparison partner - then a second ruled total turns it into Difference,
-  // bigger than Expected Closing above it, since it's the number that
-  // actually answers "are we OK", not just another line in the list.
+  // Difference (and only Difference) still needs a signed "+X / -X" format;
+  // Opening/Expected/Counted are plain magnitudes, never signed.
   function fmtSigned(n, currency) {
     if (n === 0) return escapeHtml(currency) + ' ' + fmt(0);
     var sign = n > 0 ? '+' : '−';
     return sign + escapeHtml(currency) + ' ' + fmt(Math.abs(n));
-  }
-
-  function tillHtml(till, cashNet, currency) {
-    if (!till) {
-      return '<div class="card till">' +
-        '<div class="cardhead"><div class="headrow">' +
-          '<span class="kind"><span class="swatch" style="background:var(--ink3)"></span>Till</span>' +
-        '</div></div>' +
-        '<div class="empty">No till session this day.</div>' +
-        '</div>';
-    }
-    var diffKnown = till.difference !== null && till.difference !== undefined;
-    var balanced = diffKnown && till.difference === 0;
-    var statusClass = !till.closed ? 'live' : (balanced ? 'bal' : 'off');
-    var statusText = !till.closed
-      ? '<span class="livedot"></span>Live'
-      : (balanced ? 'Balanced' : 'Off by ' + fmtSigned(till.difference, currency));
-    var diffClass = diffKnown ? (balanced ? '' : (till.difference > 0 ? 'pos' : 'neg')) : 'muted';
-    var money = function (n) { return '<span class="cur">' + escapeHtml(currency) + '</span> ' + fmt(n); };
-    return '<div class="card till">' +
-      '<div class="cardhead"><div class="headrow">' +
-        '<span class="kind"><span class="swatch" style="background:var(--ink3)"></span>Till</span>' +
-        '<span class="statuspill ' + statusClass + '">' + statusText + '</span>' +
-      '</div></div>' +
-      '<div class="ledger">' +
-        '<div class="lrow"><span class="llabel">Opening Balance</span><span class="lval">' + money(till.opening) + '</span></div>' +
-        '<div class="lrow"><span class="llabel">Cash Today</span><span class="lval ' + (cashNet < 0 ? 'neg' : 'pos') + '">' + fmtSigned(cashNet, currency) + '</span></div>' +
-        '<div class="lrow subtotal"><span class="llabel">Expected Closing</span><span class="lval">' + money(till.expectedClosing) + '</span></div>' +
-        '<div class="lrow"><span class="llabel">Counted</span><span class="lval' + (diffKnown ? '' : ' muted') + '">' + (diffKnown ? money(till.counted) : '—') + '</span></div>' +
-        '<div class="lrow grandtotal"><span class="llabel">Difference</span><span class="lval ' + diffClass + '">' + (diffKnown ? fmtSigned(till.difference, currency) : '—') + '</span></div>' +
-      '</div>' +
-      '</div>';
   }
 
   // Plain card (Transfer): one bucket, one row list.
@@ -435,16 +402,17 @@
       '</div></div>';
   }
 
-  // Cash card: one card, two sections sharing the scroll area - "In" (money
-  // received, same row shape as Transfer) on top, "Out" (till withdrawals)
-  // below it. The card's own headline total is net (In minus Out), colored
-  // green when the day is up and red when it's down, since that headline is
-  // the one number meant to answer "how did cash move today" at a glance.
-  // Each section's own total sits at the BOTTOM of its row list (a receipt
-  // total, not a header caption) and is deliberately bigger/bolder than any
-  // row above it - the total matters more than any one line item, and
-  // should read that way.
-  function cashCardHtml(inBucket, inRows, outBucket, outRows, currency) {
+  // Cash card: a bookend ledger. Opening Balance leads, before In even
+  // starts; In and Out sit in the middle exactly as before, each with its
+  // own receipt-style total; Expected Closing/Counted/Difference close the
+  // card right after Out ends. The whole card reads as one continuous
+  // ledger from float to reconciliation, not a transaction list with a
+  // separate till card bolted on beside it. The headline total stays net
+  // (In minus Out), colored green when the day is up and red when it's
+  // down - the one number meant to answer "how did cash move today" at a
+  // glance; till is missing on a day with no session, so the opening/
+  // closing ledger pieces just don't render rather than showing empty dashes.
+  function cashCardHtml(inBucket, inRows, outBucket, outRows, till, currency) {
     var inBody = inRows.length
       ? inRows.map(function (t, i) { return rowHtml(t, i, 'pos'); }).join('')
       : '<div class="empty">No cash payments yet.</div>';
@@ -454,6 +422,24 @@
     var net = (inBucket.total || 0) - (outBucket.total || 0);
     var netClass = net < 0 ? 'neg' : 'pos';
     var netText = net < 0 ? '−' + fmt(Math.abs(net)) : fmt(net);
+    var money = function (n) { return '<span class="cur">' + escapeHtml(currency) + '</span> ' + fmt(n); };
+
+    var openingHtml = '';
+    var closingHtml = '';
+    if (till) {
+      var diffKnown = till.difference !== null && till.difference !== undefined;
+      var balanced = diffKnown && till.difference === 0;
+      var diffClass = diffKnown ? (balanced ? '' : (till.difference > 0 ? 'pos' : 'neg')) : 'muted';
+      openingHtml = '<div class="ledger opening-only">' +
+        '<div class="lrow opening"><span class="llabel">Opening Balance</span><span class="lval">' + money(till.opening) + '</span></div>' +
+        '</div>';
+      closingHtml = '<div class="ledger">' +
+        '<div class="lrow subtotal"><span class="llabel">Expected Closing</span><span class="lval">' + money(till.expectedClosing) + '</span></div>' +
+        '<div class="lrow"><span class="llabel">Counted</span><span class="lval' + (diffKnown ? '' : ' muted') + '">' + (diffKnown ? money(till.counted) : '—') + '</span></div>' +
+        '<div class="lrow grandtotal"><span class="llabel">Difference</span><span class="lval ' + diffClass + '">' + (diffKnown ? fmtSigned(till.difference, currency) : '—') + '</span></div>' +
+        '</div>';
+    }
+
     return '<div class="card">' +
       '<div class="cardhead">' +
         '<div class="headrow">' +
@@ -462,6 +448,7 @@
         '</div>' +
         '<div class="total ' + netClass + '"><span class="cur">' + escapeHtml(currency) + '</span><span>' + netText + '</span></div>' +
       '</div>' +
+      openingHtml +
       '<div class="rows">' +
         '<div class="sectionhead"><span>In</span></div>' +
         inBody +
@@ -470,6 +457,7 @@
         outBody +
         '<div class="sectiontotal out"><span class="stitle">Total Out</span><span class="stot">−' + escapeHtml(currency) + ' ' + fmt(outBucket.total || 0) + '</span></div>' +
       '</div>' +
+      closingHtml +
       '</div>';
   }
 
@@ -484,7 +472,6 @@
     var cash = all.filter(function (t) { return t.method === 'cash'; }).sort(byAmount);
     var other = all.filter(function (t) { return t.method !== 'transfer' && t.method !== 'cash'; });
     var cashOutTx = (day.cashOutTransactions || []).slice().sort(function (a, b) { return b.amount - a.amount; });
-    var cashNet = (day.cash.total || 0) - (day.cashOut.total || 0);
 
     daynameEl.textContent = day.k === 0 ? 'Today' : day.wd;
     daydateEl.textContent = day.dateFull;
@@ -498,10 +485,10 @@
       stampEl.innerHTML = '';
     }
 
-    var html = tillHtml(day.till, cashNet, currency) +
+    var html =
       '<div class="cardsrow">' +
         cardHtml('Transfer', 'var(--accent)', day.transfer, transfer, currency, 'transaction') +
-        cashCardHtml(day.cash, cash, day.cashOut, cashOutTx, currency) +
+        cashCardHtml(day.cash, cash, day.cashOut, cashOutTx, day.till, currency) +
       '</div>';
 
     if (other.length) {
