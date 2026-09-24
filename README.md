@@ -1,43 +1,48 @@
 # Ike POS
 
-The till, day by day, at MRH Investment. A **Till** card up top is the
-register's own reconciliation, laid out as a ledger: Opening Balance and
-Cash Today lead into a ruled Expected Closing subtotal; Counted continues
-right below it in the same value column, then a second, bigger ruled total
-turns it into Difference. Below it, two more cards, **Transfer** and
-**Cash**. The Cash card carries two sections — **In** (money received,
-same row shape as Transfer) on top, **Out** (what got taken back out of the
-till) below it, each with its own subtotal. A date pill strip across the top
-(same pattern as [ike-sales](https://github.com/yuki-uthman/ike-sales), minus
-the chart) lets you flip back through the retained history instead of only
-ever seeing today. Like its siblings this repo is
+The till, day by day, at MRH Investment: two cards, **Transfer** and
+**Cash**. The Cash card is a bookend ledger — **Opening Balance** opens it,
+before **In** even starts; **In** (money received, same row shape as
+Transfer) and **Out** (what got taken back out of the till) sit in the
+middle, each with its own subtotal; **Expected Closing**, **Counted** and
+**Difference** close it right after Out ends. There is no separate Till
+card — the register's own reconciliation lives inside Cash, since the till
+*is* the cash drawer. A date pill strip across the top (same pattern as
+[ike-sales](https://github.com/yuki-uthman/ike-sales), minus the chart) lets
+you flip back through the retained history instead of only ever seeing
+today. Like its siblings this repo is
 **static only**: no secret, no cron, no build step. It fetches its data live
 from [ike-data](https://github.com/yuki-uthman/ike-data), the shared Odoo
 pipeline that also backs ike-sales and ike-expenses.
 
-## What the Till card means
+## What the Cash card's ledger means
 
-Read top to bottom, it's one running ledger: **Opening Balance** is the
-float the till started the day with; **Cash Today** is the same net cash
-figure the Cash card headlines (In minus Out), colored the same way. Those
-two lead into **Expected Closing** — Odoo's own theoretical running
-balance — as a ruled subtotal. **Counted** continues right below it, in the
-same value column, since it's the direct comparison: what staff actually
-found at close versus what Odoo expected. A second, bigger ruled total
-turns that comparison into **Difference** — the number that actually
-answers "are we OK", so it's deliberately the loudest figure on the card,
-not just another line in the list. The header pill reads "Live" (with a
-small dot) while the session is still open, leaving Counted/Difference as
-`—` rather than Odoo's own placeholder numbers (`0` counted, a huge
-negative difference) that only mean something once the drawer is actually
-closed and counted; it switches to "Balanced" or "Off by ±MVR n" once it
-is.
+Read top to bottom, the whole card is one running ledger, not a
+transaction list with a reconciliation bolted on beside it. **Opening
+Balance** is the float the till started the day with — sized and weighted
+the same as Total In/Total Out below it (it's the same tier of figure,
+just not derived from today's rows) and given its own accent color so it
+doesn't get lost now that it's as loud as its neighbors. In the middle,
+**In** and **Out** are exactly what they were before the merge. At the
+bottom, **Expected Closing** — Odoo's own theoretical running balance — is
+a ruled subtotal, sized bigger still than Opening/Total In/Total Out.
+**Counted** continues right below it, in the same value column, since it's
+the direct comparison: what staff actually found at close versus what Odoo
+expected. A second, bigger ruled total turns that comparison into
+**Difference** — the number that actually answers "are we OK", so it's
+deliberately the loudest figure on the card. On a day with no POS session
+at all, the Opening/Expected/Counted/Difference pieces simply don't
+render — Cash still shows In/Out normally, just without a till to
+reconcile. While the session is still open, Counted/Difference read `—`
+rather than Odoo's own placeholder numbers (`0` counted, a huge negative
+difference) that only mean something once the drawer is actually closed
+and counted.
 
-This card can disagree with what the Cash/Transfer cards' totals would
-suggest, and that is expected, not a bug: it answers "does the drawer match
-what Odoo expects", not "what money moved" — a miscount, a manual float
-adjustment, or a previous day's session closing late can all move it
-independently of the day's recorded transactions.
+Expected Closing/Counted/Difference can disagree with what In/Out/the
+headline net would suggest, and that is expected, not a bug: they answer
+"does the drawer match what Odoo expects", not "what money moved" — a
+miscount, a manual float adjustment, or a previous day's session closing
+late can all move them independently of the day's recorded transactions.
 
 ## What Transfer/Cash count, and what they don't
 
