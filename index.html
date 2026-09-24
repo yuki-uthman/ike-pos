@@ -380,14 +380,15 @@
 
   // Difference (and only Difference) still needs a signed "+X / -X" format;
   // Opening/Expected/Counted are plain magnitudes, never signed. The sign
-  // rides with the number (colored, same as the digits) - only the
-  // currency label itself gets the muted .cur treatment, same convention
-  // as every other total on the card.
+  // rides WITH the muted currency label ("-MVR"), not the big colored
+  // number - grouping it with the number instead left it inheriting the
+  // number's large bold size while sitting next to tiny "MVR", so the dash
+  // floated up near cap-height instead of sitting on the baseline with the
+  // text beside it. Same baseline, same size, same color as "MVR" fixes it.
   function fmtSigned(n, currency) {
-    var cur = '<span class="cur">' + escapeHtml(currency) + '</span>';
-    if (n === 0) return cur + ' ' + fmt(0);
+    if (n === 0) return '<span class="cur">' + escapeHtml(currency) + '</span> ' + fmt(0);
     var sign = n > 0 ? '+' : '−';
-    return sign + cur + ' ' + fmt(Math.abs(n));
+    return '<span class="cur">' + sign + escapeHtml(currency) + '</span> ' + fmt(Math.abs(n));
   }
 
   // Plain card (Transfer): one bucket, one row list.
@@ -472,7 +473,7 @@
         '<div class="sectiontotal pos"><span class="stitle">Total In</span><span class="stot"><span class="cur">' + escapeHtml(currency) + '</span> ' + fmt(inBucket.total || 0) + '</span></div>' +
         '<div class="sectionhead out"><span>Out</span></div>' +
         outBody +
-        '<div class="sectiontotal out"><span class="stitle">Total Out</span><span class="stot">−<span class="cur">' + escapeHtml(currency) + '</span> ' + fmt(outBucket.total || 0) + '</span></div>' +
+        '<div class="sectiontotal out"><span class="stitle">Total Out</span><span class="stot"><span class="cur">−' + escapeHtml(currency) + '</span> ' + fmt(outBucket.total || 0) + '</span></div>' +
       '</div>' +
       closingHtml +
       '</div>';
