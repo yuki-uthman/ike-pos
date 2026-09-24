@@ -60,8 +60,24 @@
   .stamp { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink3); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; }
 
-  .content { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, 1fr); gap: 14px; }
+  /* Content is a column: the Till card sits at its natural height up top,
+     the Transfer/Cash pair shares whatever is left (same equal-split grid
+     as before), and the "other" strip (if any) sits at its natural height
+     after them. */
+  .content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; }
+  .cardsrow { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, 1fr); gap: 14px; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 0; }
+  .card.till { flex: 0 0 auto; }
+
+  .statgrid { display: grid; grid-template-columns: 1fr 1fr; }
+  .stat { padding: 14px 18px 16px; display: flex; flex-direction: column; gap: 5px; border-top: 1px solid var(--rule); }
+  .stat:nth-child(odd) { border-right: 1px solid var(--rule); }
+  .stat:nth-child(-n+2) { border-top: 0; }
+  .statlabel { font-family: Manrope, sans-serif; font-weight: 700; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+  .statval { display: flex; align-items: baseline; gap: 6px; font-family: Manrope, sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; }
+  .statval .cur { font-size: 11px; font-weight: 700; color: var(--ink3); letter-spacing: 0.03em; }
+  .statval.muted { color: var(--ink3); }
+  .statval.out { color: var(--out); }
 
   .cardhead { padding: 16px 18px 12px; border-bottom: 1px solid var(--rule); display: flex; flex-direction: column; gap: 2px; }
   .headrow { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
@@ -134,7 +150,8 @@
 
   @media (min-width: 900px) {
     .shell { padding: 30px 40px 20px; gap: 18px; }
-    .content { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); gap: 22px; }
+    .content { gap: 22px; }
+    .cardsrow { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); gap: 22px; }
     .dayname { font-size: 26px; }
     .daydate { font-size: 14px; }
     .cardhead { padding: 22px 24px 16px; }
@@ -142,7 +159,9 @@
     .cur { font-size: 15px; }
     .row { padding: 11px 14px; }
     .ref { font-size: 12px; }
-    .otherstrip { grid-column: 1 / -1; }
+    .stat { padding: 18px 24px 20px; }
+    .statval { font-size: 26px; }
+    .statval .cur { font-size: 13px; }
   }
 </style>
 </head>
@@ -210,6 +229,7 @@
         other: rd.other || { total: 0, count: 0 },
         cashOut: rd.cashOut || { total: 0, count: 0 },
         cashOutTransactions: rd.cashOutTransactions || [],
+        till: rd.till || null,
         label: k === 0 ? 'Today' : wd.slice(0, 3) + ' ' + dn,
         dateFull: dn + ' ' + mo + ' ' + yr
       };
@@ -303,6 +323,52 @@
       head + detail + '</div>';
   }
 
+  // Till card: the register's own reconciliation, not a transaction list.
+  // Opening/Expected sit on top (what Odoo expects, start to theoretical
+  // end); Counted/Difference sit below (what was actually found, and the
+  // gap that leaves) - lining Difference up directly under Expected so the
+  // subtraction it represents reads straight down the column.
+  function fmtSigned(n, currency) {
+    if (n === 0) return escapeHtml(currency) + ' ' + fmt(0);
+    var sign = n > 0 ? '+' : '−';
+    return sign + escapeHtml(currency) + ' ' + fmt(Math.abs(n));
+  }
+
+  function statHtml(label, value, extraClass) {
+    return '<div class="stat">' +
+      '<span class="statlabel">' + escapeHtml(label) + '</span>' +
+      '<span class="statval' + (extraClass ? ' ' + extraClass : '') + '">' + value + '</span>' +
+      '</div>';
+  }
+
+  function tillHtml(till, currency) {
+    if (!till) {
+      return '<div class="card till">' +
+        '<div class="cardhead"><div class="headrow">' +
+          '<span class="kind"><span class="swatch" style="background:var(--ink3)"></span>Till</span>' +
+        '</div></div>' +
+        '<div class="empty">No till session this day.</div>' +
+        '</div>';
+    }
+    var diffKnown = till.difference !== null && till.difference !== undefined;
+    var balanced = diffKnown && till.difference === 0;
+    var status = !till.closed ? 'Still open' : (balanced ? 'Balanced' : 'Off by ' + fmtSigned(till.difference, currency));
+    var statusColor = !till.closed ? 'var(--ink3)' : (balanced ? 'var(--ink2)' : 'var(--out)');
+    var money = function (n) { return '<span class="cur">' + escapeHtml(currency) + '</span><span>' + fmt(n) + '</span>'; };
+    return '<div class="card till">' +
+      '<div class="cardhead"><div class="headrow">' +
+        '<span class="kind"><span class="swatch" style="background:var(--ink3)"></span>Till</span>' +
+        '<span class="count" style="color:' + statusColor + '">' + escapeHtml(status) + '</span>' +
+      '</div></div>' +
+      '<div class="statgrid">' +
+        statHtml('Opening', money(till.opening)) +
+        statHtml('Expected Closing', money(till.expectedClosing)) +
+        statHtml('Counted', diffKnown ? money(till.counted) : '—', diffKnown ? '' : 'muted') +
+        statHtml('Difference', diffKnown ? fmtSigned(till.difference, currency) : '—', diffKnown ? (balanced ? '' : 'out') : 'muted') +
+      '</div>' +
+      '</div>';
+  }
+
   // Plain card (Transfer): one bucket, one row list.
   function cardHtml(title, swatch, bucket, rows, currency, unit) {
     var n = rows.length;
@@ -385,9 +451,11 @@
       stampEl.innerHTML = '';
     }
 
-    var html =
-      cardHtml('Transfer', 'var(--accent)', day.transfer, transfer, currency, 'transaction') +
-      cashCardHtml(day.cash, cash, day.cashOut, cashOutTx, currency);
+    var html = tillHtml(day.till, currency) +
+      '<div class="cardsrow">' +
+        cardHtml('Transfer', 'var(--accent)', day.transfer, transfer, currency, 'transaction') +
+        cashCardHtml(day.cash, cash, day.cashOut, cashOutTx, currency) +
+      '</div>';
 
     if (other.length) {
       var names = {};
